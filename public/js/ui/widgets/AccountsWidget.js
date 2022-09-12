@@ -14,7 +14,12 @@ class AccountsWidget {
    * необходимо выкинуть ошибку.
    * */
   constructor( element ) {
-
+    if (element === undefined){
+      throw new Error('Object is empty')
+    }
+    this.element = element
+    this.registerEvents()
+    this.update()
   }
 
   /**
@@ -25,6 +30,18 @@ class AccountsWidget {
    * вызывает AccountsWidget.onSelectAccount()
    * */
   registerEvents() {
+    this.element.onclick = (e) => {
+      if (e.target.classList.contains('header')) {
+        return
+      }
+      e.preventDefault()
+      this.onSelectAccount(e.target.closest('li'))
+    }
+
+    document.querySelector('.create-account').addEventListener('click', (e)=> {
+      e.preventDefault()
+      App.getModal('createAccount').open()
+    })
 
   }
 
@@ -39,7 +56,14 @@ class AccountsWidget {
    * метода renderItem()
    * */
   update() {
-
+    if(User.current()) {
+      Account.list(null, (err, resp) => {
+        if (resp && resp.success) {
+          this.clear()
+          resp.data.forEach(a => this.renderItem(a))
+        }
+      })
+    }
   }
 
   /**
@@ -48,7 +72,7 @@ class AccountsWidget {
    * в боковой колонке
    * */
   clear() {
-
+      this.element.querySelectorAll('.account').forEach(e => e.remove())
   }
 
   /**
@@ -60,6 +84,16 @@ class AccountsWidget {
    * */
   onSelectAccount( element ) {
 
+    if(this.lastActive) {
+      this.lastActive.classList.remove('active')
+    }
+    element.classList.add('active')
+
+    this.lastActive = element
+
+    App.showPage('transactions', {
+      account_id: element.dataset.id
+    })
   }
 
   /**
@@ -68,7 +102,12 @@ class AccountsWidget {
    * item - объект с данными о счёте
    * */
   getAccountHTML(item){
-
+    return `<li class="account" data-id="${item.id}">
+    <a href="#">
+        <span>${item.name}</span>
+        <span>${item.sum} ₽</span>
+    </a>
+</li>`
   }
 
   /**
@@ -78,6 +117,6 @@ class AccountsWidget {
    * и добавляет его внутрь элемента виджета
    * */
   renderItem(data){
-
+    this.element.insertAdjacentHTML('beforeend', this.getAccountHTML(data))
   }
 }
