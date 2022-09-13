@@ -16,7 +16,7 @@ class TransactionsPage {
     }
     this.element = element
     this.registerEvents()
-    // this.update()
+
 
   }
 
@@ -24,7 +24,8 @@ class TransactionsPage {
    * Вызывает метод render для отрисовки страницы
    * */
   update() {
-    this.render({account_id: 3})
+    this.render(this.lastOptions)
+
   }
 
   /**
@@ -35,11 +36,21 @@ class TransactionsPage {
    * */
   registerEvents() {
     this.element.querySelector('.remove-account').onclick = () => {
-      this.removeAccount()
+      if(confirm('Вы действительно хотите удалить счёт?')) {
+        this.removeAccount()
+      }
+
     }
     this.element.addEventListener('click', (e)=> {
-      this.removeTransaction( e.target.closest('.transaction__remove').dataset.id)
+      let transId = e.target.closest('.transaction__remove')
+      if(transId) {
+        if(confirm('Вы действительно хотите удалить эту транзакцию??')) {
+          this.removeTransaction( transId.dataset.id)
+        }
+      }
     })
+
+
   }
 
   /**
@@ -52,13 +63,16 @@ class TransactionsPage {
    * для обновления приложения
    * */
   removeAccount() {
-    Account.remove( {id: 1}, (err, resp)=> {
-      if( resp && resp.success) {
-        App.updateWidgets()
-        App.updateForms()
-        this.clear()
-      }
-    })
+    if(this.lastOptions) {
+      Account.remove( {id: this.lastOptions.account_id}, (err, resp)=> {
+        if( resp && resp.success) {
+          App.updateWidgets()
+          App.updateForms()
+          this.clear()
+        }
+      })
+    }
+
   }
 
   /**
@@ -68,6 +82,13 @@ class TransactionsPage {
    * либо обновляйте текущую страницу (метод update) и виджет со счетами
    * */
   removeTransaction( id ) {
+
+
+      Transaction.remove({id}, (err, response) => {
+        if (response && response.success) {
+          App.update()
+        }
+      });
 
   }
 
@@ -88,6 +109,7 @@ class TransactionsPage {
         Transaction.list(options, (err, resp) => {
             if (resp && resp.success) {
               this.renderTransactions(resp.data)
+
             }
           })
 
@@ -142,13 +164,11 @@ class TransactionsPage {
             </div>
           </div>
           <div class="col-md-3">
-            <div class="transaction__summ">
-            <!--  сумма -->
+            <div class="transaction__summ">           
             ${item.sum.toLocaleString()} <span class="currency">₽</span>
             </div>
           </div>
-          <div class="col-md-2 transaction__controls">
-              <!-- в data-id нужно поместить id -->
+          <div class="col-md-2 transaction__controls">            
               <button class="btn btn-danger transaction__remove" data-id="${item.id}">
                   <i class="fa fa-trash"></i>  
               </button>
@@ -162,16 +182,12 @@ class TransactionsPage {
    * используя getTransactionHTML
    * */
   renderTransactions(data){
-
-
+    let list = ''
 
     data.forEach(item => {
-      this.element.querySelector('.content').insertAdjacentHTML('beforeend',
-          `${this.getTransactionHTML(item)}`)
+      list += this.getTransactionHTML(item)
     });
 
-
-
-
+    this.element.querySelector('.content').innerHTML = list
   }
 }
